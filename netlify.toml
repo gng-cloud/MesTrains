@@ -1,0 +1,5 @@
+[[redirects]]
+  from = "/api/*"
+  to = "https://prim.iledefrance-mobilites.fr/marketplace/v2/navitia/:splat"
+  status = 200
+  force = true

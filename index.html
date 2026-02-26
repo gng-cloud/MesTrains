@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RER D Info Trafic</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="apple-touch-icon" href="train-icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen selection:bg-blue-500/30">
+
+    <!-- AUTH MODAL -->
+    <div id="auth-modal"
+        class="fixed inset-0 bg-slate-900/95 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity hidden">
+        <div class="bg-slate-800 border border-slate-700 p-8 rounded-2xl shadow-2xl max-w-sm w-full">
+            <div
+                class="w-16 h-16 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-blue-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-center text-white mb-2">Jeton PRIM IDFM</h2>
+            <p class="text-slate-400 text-center text-sm mb-6 leading-relaxed">Entrez votre jeton API PRIM Île-de-France
+                Mobilités pour accéder
+                aux horaires en temps réel.</p>
+
+            <input type="text" id="api-key-input" placeholder="xxxxxxxx-xxxx-xxxx..."
+                class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder-slate-600 shadow-inner">
+
+            <button id="btn-save-key"
+                class="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/20 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-slate-800">
+                Connexion
+            </button>
+        </div>
+    </div>
+
+    <!-- TRAFFIC MODAL -->
+    <div id="traffic-modal"
+        class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[60] flex items-center justify-center p-4 transition-all duration-300 opacity-0 pointer-events-none">
+        <div class="bg-slate-800 border border-slate-700 p-6 rounded-3xl shadow-2xl max-w-md w-full transform scale-95 transition-transform duration-300"
+            id="traffic-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                    <div
+                        class="w-8 h-8 rounded-full bg-[#5e9620]/20 border border-[#5e9620]/50 flex items-center justify-center">
+                        <span class="text-[#84c140] font-black text-[10px]">RER</span>
+                    </div>
+                    État du Trafic D
+                </h3>
+                <button onclick="closeTrafficStatus()"
+                    class="text-slate-400 hover:text-white p-2 hover:bg-slate-700/50 rounded-full transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div id="traffic-status-body" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                <!-- Status content injected here -->
+                <div class="flex flex-col items-center justify-center py-12 gap-4">
+                    <div class="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin">
+                    </div>
+                    <p class="text-slate-400 text-sm animate-pulse">Consultation de l'info trafic...</p>
+                </div>
+            </div>
+
+            <div
+                class="mt-8 pt-4 border-t border-slate-700/50 flex justify-between items-center text-[10px] text-slate-500 uppercase font-bold tracking-widest">
+                <span>Source: PRIM IDFM</span>
+                <span id="traffic-update-time">Actualisé à --:--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="main-app" class="max-w-md mx-auto p-4 flex flex-col min-h-screen hidden">
+
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-6 mt-2">
+            <button onclick="showTrafficStatus('line:IDFM:C01729', 'D')"
+                class="group text-3xl font-extrabold tracking-tight flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none"
+                title="Voir l'info trafic RER D">
+                <div
+                    class="w-8 h-8 rounded-full bg-[#5e9620]/20 border border-[#5e9620]/50 flex items-center justify-center group-hover:bg-[#5e9620]/30 group-hover:scale-105 transition-all">
+                    <span class="text-[#84c140] font-black text-[10px]">RER</span>
+                </div>
+                <span>RER D</span>
+            </button>
+            <button id="btn-change-key"
+                class="text-xs font-semibold text-slate-400 hover:text-white transition-colors flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700 hover:bg-slate-700 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Clé API
+            </button>
+        </header>
+
+        <!-- Controls Box -->
+        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-5 shadow-xl mb-6 relative overflow-hidden">
+            <!-- Decor background elements -->
+            <div class="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none">
+            </div>
+
+            <div class="relative z-10 flex flex-col gap-5">
+
+                <div class="flex justify-between items-center border-b border-slate-700/60 pb-4">
+                    <!-- Aller / Retour Segmented Control -->
+                    <div class="flex bg-slate-900/80 rounded-lg p-1 w-[160px] shadow-inner ring-1 ring-slate-800">
+                        <button id="btn-aller"
+                            class="flex-1 px-3 py-1.5 rounded-md text-sm font-bold transition-all bg-blue-600 text-white shadow-sm">Aller</button>
+                        <button id="btn-retour"
+                            class="flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-all text-slate-400 hover:text-white">Retour</button>
+                    </div>
+
+                    <!-- Select Destination -->
+                    <div class="relative">
+                        <select id="dest-select"
+                            class="appearance-none bg-slate-900 border border-slate-700 text-white text-sm font-semibold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer shadow-inner">
+                            <option value="474151">Châtelet - Les Halles</option>
+                            <option value="71410">Gare du Nord</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trip Summary -->
+                <div class="flex items-center justify-between">
+                    <div class="min-w-0 pr-4">
+                        <p class="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1"
+                            id="trip-subtitle">Trajet Direct</p>
+                        <h2 class="text-xl font-extrabold text-white leading-tight truncate flex items-center gap-1.5"
+                            id="trip-title">
+                            Arnouville
+                            <span class="text-blue-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                            </span>
+                            Châtelet
+                        </h2>
+                    </div>
+                    <!-- Invert Arrow Button -->
+                    <button id="btn-invert"
+                        class="p-3 bg-slate-700/50 hover:bg-slate-600 active:bg-slate-500 text-white rounded-full transition-all border border-slate-600 shadow-sm flex-shrink-0 group focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5 transform group-active:rotate-180 transition-transform duration-300"
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- List Header -->
+        <div class="flex justify-between items-end mb-4 px-1">
+            <h3 class="text-slate-300 font-bold text-sm tracking-wide">Prochains départs</h3>
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] font-medium text-slate-500" id="last-refresh">--:--</span>
+                <button id="btn-refresh"
+                    class="text-blue-400 hover:text-blue-300 transition-colors p-1.5 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg active:scale-95"
+                    title="Actualiser manuellement">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Trains List -->
+        <div id="trains-container" class="flex flex-col gap-3 pb-8">
+            <!-- Rendered dynamically -->
+        </div>
+    </div>
+
+    <script>
+        let apiKey = localStorage.getItem('sncf_api_key');
+        let isRetour = false;
+        let selectedDest = '474151'; // Init to Châtelet
+        let refreshInterval;
+        let currentJourneys = [];
+        let displayLimit = 5;
+
+        const CODES = {
+            MAGENTA: '478733',      // IDFM Magenta 
+            LA_DEFENSE: '71517',    // IDFM La Défense
+            CHATELET_RERA: '474151', // IDFM Châtelet les Halles
+            GND: '71410',           // IDFM Gare du Nord
+            GND_UIC: '8727100',     // SNCF UIC Gare du Nord
+            GND_MAGENTA_UIC: '8727146', // SNCF UIC Magenta
+            CHATELET_RERD_IDFM: '474151',
+            CHATELET_RERD_UIC: '8775860',
+            CHATELET_ZONE: '71520',
+            ARN_ID: '66009'
+        };
+
+        const DOM = {
+            authModal: document.getElementById('auth-modal'),
+            mainApp: document.getElementById('main-app'),
+            apiKeyInput: document.getElementById('api-key-input'),
+            trainsContainer: document.getElementById('trains-container'),
+            lastRefresh: document.getElementById('last-refresh'),
+            tripTitle: document.getElementById('trip-title'),
+            destSelect: document.getElementById('dest-select'),
+            btnAller: document.getElementById('btn-aller'),
+            btnRetour: document.getElementById('btn-retour')
+        };
+
+        function init() {
+            if (!apiKey) {
+                DOM.mainApp.classList.add('hidden');
+                DOM.authModal.classList.remove('hidden');
+            } else {
+                DOM.authModal.classList.add('hidden');
+                DOM.mainApp.classList.remove('hidden');
+
+                updateUI();
+                loadData();
+
+                if (refreshInterval) clearInterval(refreshInterval);
+                refreshInterval = setInterval(loadData, 60000);
+            }
+        }
+
+        function saveKey() {
+            const key = DOM.apiKeyInput.value.trim();
+            if (key) {
+                localStorage.setItem('sncf_api_key', key);
+                apiKey = key;
+                init();
+            }
+        }
+
+        function clearKey() {
+            localStorage.removeItem('sncf_api_key');
+            apiKey = null;
+            if (refreshInterval) clearInterval(refreshInterval);
+            DOM.apiKeyInput.value = '';
+            init();
+        }
+
+        function updateUI() {
+            const destName = DOM.destSelect.options[DOM.destSelect.selectedIndex].text.split(' -')[0];
+            const arrow = `<span class="text-blue-500 mx-1.5"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg></span>`;
+
+            if (isRetour) {
+                DOM.tripTitle.innerHTML = `${destName} ${arrow} Arnouville`;
+
+                DOM.btnRetour.classList.replace('text-slate-400', 'text-white');
+                DOM.btnRetour.classList.add('bg-blue-600', 'font-bold', 'shadow-sm');
+                DOM.btnRetour.classList.remove('font-medium');
+
+                DOM.btnAller.classList.replace('text-white', 'text-slate-400');
+                DOM.btnAller.classList.replace('font-bold', 'font-medium');
+                DOM.btnAller.classList.remove('bg-blue-600', 'shadow-sm');
+            } else {
+                DOM.tripTitle.innerHTML = `Arnouville ${arrow} ${destName}`;
+
+                DOM.btnAller.classList.replace('text-slate-400', 'text-white');
+                DOM.btnAller.classList.add('bg-blue-600', 'font-bold', 'shadow-sm');
+                DOM.btnAller.classList.remove('font-medium');
+
+                DOM.btnRetour.classList.replace('text-white', 'text-slate-400');
+                DOM.btnRetour.classList.replace('font-bold', 'font-medium');
+                DOM.btnRetour.classList.remove('bg-blue-600', 'shadow-sm');
+            }
+        }
+
+        function toggleDirection() { setDirection(!isRetour); }
+
+        function setDirection(retour) {
+            if (isRetour !== retour) {
+                isRetour = retour;
+                displayLimit = 5; // Reset limit on direction change
+                updateUI();
+                loadData();
+            }
+        }
+
+        async function loadData() {
+            showLoading();
+
+            const from = isRetour ? selectedDest : CODES.ARN_ID;
+            const to = isRetour ? CODES.ARN_ID : selectedDest;
+
+            // Fetch more journeys initially to allow "Load More" without extra requests
+            const url = `https://prim.iledefrance-mobilites.fr/marketplace/v2/navitia/journeys?from=stop_area:IDFM:${from}&to=stop_area:IDFM:${to}&min_nb_journeys=25`;
+
+            try {
+                const res = await fetch(url, {
+                    headers: { 'apiKey': apiKey }
+                });
+
+                if (!res.ok) {
+                    if (res.status === 401) throw new Error("Clé API invalide ou expirée.");
+                    if (res.status === 400 || res.status === 404) throw new Error("Aucun trajet trouvé pour le moment.");
+                    throw new Error(`Erreur réseau (${res.status})`);
+                }
+
+                const data = await res.json();
+                currentJourneys = data.journeys || [];
+                renderData(currentJourneys);
+            } catch (err) {
+                renderError(err.message);
+            }
+        }
+
+        function showLoading() {
+            DOM.trainsContainer.innerHTML = `
+                <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm">
+                    <div class="animate-pulse flex items-center justify-between">
+                        <div class="flex items-center gap-4 w-2/3">
+                            <div class="w-12 h-12 rounded-full bg-slate-700/50"></div>
+                            <div class="w-full">
+                                <div class="h-4 w-16 bg-slate-700/80 rounded block mb-2"></div>
+                                <div class="h-2 w-3/4 bg-slate-700/50 rounded block"></div>
+                            </div>
+                        </div>
+                        <div class="w-1/3 flex flex-col items-end gap-2 border-l border-slate-700/50 pl-4">
+                            <div class="h-6 w-12 bg-slate-700/80 rounded block"></div>
+                            <div class="h-3 w-10 bg-slate-700/50 rounded block"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm opacity-50">
+                    <div class="animate-pulse flex items-center justify-between">
+                        <div class="flex items-center gap-4 w-2/3">
+                            <div class="w-12 h-12 rounded-full bg-slate-700/50"></div>
+                            <div class="w-full">
+                                <div class="h-4 w-16 bg-slate-700/80 rounded block mb-2"></div>
+                                <div class="h-2 w-3/4 bg-slate-700/50 rounded block"></div>
+                            </div>
+                        </div>
+                        <div class="w-1/3 flex flex-col items-end gap-2 border-l border-slate-700/50 pl-4">
+                            <div class="h-6 w-12 bg-slate-700/80 rounded block"></div>
+                            <div class="h-3 w-10 bg-slate-700/50 rounded block"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderError(msg) {
+            DOM.trainsContainer.innerHTML = `
+                <div class="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 text-center shadow-sm">
+        <div class="w-12 h-12 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <p class="font-bold text-red-400 mb-1">Connexion impossible</p>
+        <p class="text-xs text-red-300/80 leading-relaxed">${msg}</p>
+      </div>`;
+        }
+
+        // Parse YYYYMMDDTHHMMSS
+        function parseSNCFDate(d) {
+            if (!d) return null;
+            const year = d.slice(0, 4), month = d.slice(4, 6), day = d.slice(6, 8);
+            const hour = d.slice(9, 11), min = d.slice(11, 13), sec = d.slice(13, 15);
+            return new Date(`${year}-${month}-${day}T${hour}:${min}:${sec}`);
+        }
+
+        function renderData(journeys) {
+            DOM.trainsContainer.innerHTML = '';
+
+            const timeNow = new Date();
+            DOM.lastRefresh.innerText = timeNow.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+            if (!journeys || journeys.length === 0) {
+                DOM.trainsContainer.innerHTML = `
+                <div class="text-center py-12 bg-slate-800/40 rounded-2xl border border-slate-700/50 border-dashed">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-slate-400 font-medium tracking-wide">Aucun train prévu.</p>
+      </div>`;
+                return;
+            }
+
+            let count = 0;
+            let validJourneys = [];
+
+            journeys.forEach(j => {
+                const leg = j.sections.find(l => l.type === 'public_transport');
+                if (leg) validJourneys.push({ journey: j, leg: leg });
+            });
+
+            validJourneys.forEach((item, index) => {
+                if (count >= displayLimit) return;
+
+                const j = item.journey;
+                const leg = item.leg;
+
+                count++;
+
+                const baseTimeStr = leg.base_departure_date_time || leg.departure_date_time;
+                const realTimeStr = leg.departure_date_time;
+                const baseDate = parseSNCFDate(baseTimeStr);
+                const realDate = parseSNCFDate(realTimeStr);
+
+                const waitMins = Math.floor((realDate - timeNow) / 60000);
+                const delayMins = Math.floor((realDate - baseDate) / 60000);
+
+                // Check for 'canceled' flag or NO_SERVICE status. 
+                // PRIM often uses NO_SERVICE for cancelled trains that disappear from realtime feeds.
+                const isCanceled = j.status === 'NO_SERVICE' || leg.canceled === true;
+                const isPerturbed = j.status === 'SIGNIFICANT_DELAYS' || j.status === 'REDUCED_SERVICE';
+
+                const mission = leg.display_informations?.headsign || leg.display_informations?.name || 'RER';
+                const destDir = leg.display_informations?.direction || 'Gare Inconnue';
+                const displayTime = realDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-800 rounded-2xl p-4 grid grid-cols-[1fr_110px_85px] items-center border border-slate-700/80 shadow-md relative overflow-hidden group hover:border-slate-600 transition-colors";
+
+                if (isCanceled) {
+                    card.innerHTML = `
+                <div class="absolute inset-0 bg-red-500/5 z-0"></div>
+          <div class="flex items-center gap-3 relative z-10 pr-2 min-w-0 overflow-hidden">
+            <div class="w-12 h-12 rounded-full bg-slate-700/50 border border-slate-600 flex flex-col items-center justify-center flex-shrink-0">
+              <span class="text-slate-400 font-extrabold text-xs">${mission}</span>
+            </div>
+            <div class="min-w-0 truncate">
+              <p class="text-[11px] text-slate-500 uppercase font-semibold mb-0.5 tracking-wider truncate">Dir.</p>
+              <p class="text-sm font-medium text-slate-400 truncate">${destDir}</p>
+            </div>
+          </div>
+          <div class="w-[110px]"></div>
+          <div class="w-[85px] text-right relative z-10 flex flex-col justify-center border-l border-slate-700/50 pl-4 min-w-0">
+            <span class="inline-flex max-w-fit self-end bg-red-500/10 text-red-500 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider mb-1 ring-1 ring-red-500/20">Supprimé</span>
+            <p class="text-sm font-medium text-slate-500 line-through decoration-slate-600 decoration-2">${displayTime}</p>
+          </div>
+            `;
+                } else {
+                    let delayBadge = '';
+                    if (delayMins > 0) {
+                        delayBadge = `<span class="text-orange-400 text-[10px] font-bold bg-orange-500/10 px-1.5 py-0.5 rounded ml-1 ring-1 ring-orange-400/20 shadow-sm">+${delayMins} min</span>`;
+                    } else if (isPerturbed) {
+                        delayBadge = `<span class="text-orange-400 text-[10px] font-bold bg-orange-500/10 px-1.5 py-0.5 rounded ml-1 ring-1 ring-orange-400/20 shadow-sm">Retardé</span>`;
+                    }
+
+                    let waitText = waitMins <= 0 ? "À quai" : waitMins;
+                    let waitUnit = waitMins > 0 ? '<span class="text-[11px] font-medium text-slate-400 ml-0.5">min</span>' : '';
+
+                    if (waitMins < 0 && Math.abs(waitMins) > 5) {
+                        waitText = "Parti";
+                        waitUnit = "";
+                    }
+
+                    const heatColor = waitMins <= 5 && waitMins > 0 ? 'text-green-400' : 'text-white';
+                    const weight = waitMins <= 5 && waitMins > 0 ? 'font-extrabold' : 'font-bold';
+
+                    card.innerHTML = `
+        <div class="flex items-center gap-3 pr-2 min-w-0 overflow-hidden">
+            <div class="w-12 h-12 rounded-full bg-[#5e9620]/15 border border-[#5e9620]/30 shadow-inner flex flex-col items-center justify-center flex-shrink-0 group-hover:bg-[#5e9620]/20 transition-colors">
+              <h3 class="text-base font-bold text-white tracking-wide leading-tight">${mission}</h3>
+            </div>
+            <div class="min-w-0">
+              <p class="text-[11px] text-slate-400 uppercase font-bold mb-0.5 tracking-wider flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block"></span> Dir.</p>
+              <p class="text-sm font-medium text-slate-300 truncate">${destDir}</p>
+            </div>
+          </div>
+          
+          <div class="w-[110px] flex justify-center items-center">
+            ${!isRetour ? `
+                <button onclick="calculateLaDefense(${journeys.indexOf(j)}, this)" 
+                    class="p-2 rounded-full bg-slate-700/30 hover:bg-slate-700 text-blue-400 border border-slate-700/50 transition-all duration-300 group/ld flex items-center gap-1.5 overflow-hidden w-[36px] hover:w-[110px]" title="Vers La Défense">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                    <span class="text-[9px] font-black whitespace-nowrap opacity-0 group-hover/ld:opacity-100 transition-all duration-300">LA DÉFENSE</span>
+                </button>
+            ` : ''}
+          </div>
+
+                <div class="w-[85px] text-right border-l border-slate-700/50 pl-4 flex flex-col justify-center min-w-0">
+                    <p class="text-2xl ${weight} ${heatColor} leading-none mb-1">${waitText}${waitUnit}</p>
+                    <div class="flex items-center justify-end whitespace-nowrap">
+                        <p class="text-sm font-semibold text-slate-400">${displayTime}</p>
+                        ${delayBadge}
+                    </div>
+                </div>
+        `;
+                }
+
+                DOM.trainsContainer.appendChild(card);
+
+                // Add results container as a sibling to the card
+                if (!isRetour && !isCanceled) {
+                    const resultsContainer = document.createElement('div');
+                    resultsContainer.id = `ld-results-${journeys.indexOf(j)}`;
+                    resultsContainer.className = "hidden mt-1.5 bg-slate-900/50 rounded-xl p-3 border border-slate-700/50 mb-1 animate-in fade-in slide-in-from-top-2 duration-300";
+                    DOM.trainsContainer.appendChild(resultsContainer);
+                }
+            });
+
+            if (validJourneys.length > displayLimit) {
+                const loadMoreBtn = document.createElement('button');
+                loadMoreBtn.className = "w-full py-4 mt-2 text-sm font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 active:bg-blue-500/30 rounded-2xl transition-all border border-blue-500/20";
+                loadMoreBtn.innerHTML = "Charger 5 trains suivants";
+                loadMoreBtn.onclick = () => {
+                    displayLimit += 5;
+                    renderData(currentJourneys);
+                };
+                DOM.trainsContainer.appendChild(loadMoreBtn);
+            }
+        }
+
+        async function calculateLaDefense(journeyIndex, btn) {
+            const resultsDiv = document.getElementById(`ld-results-${journeyIndex}`);
+
+            // Toggle accordion
+            if (!resultsDiv.classList.contains('hidden')) {
+                resultsDiv.classList.add('hidden');
+                return;
+            }
+
+            resultsDiv.classList.remove('hidden');
+            resultsDiv.innerHTML = `
+                <div class="flex items-center justify-center py-4">
+                    <div class="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+                    <span class="ml-3 text-[11px] text-slate-400 font-medium">Calcul du trajet optimum...</span>
+                </div>
+            `;
+
+            try {
+                const journey = currentJourneys[journeyIndex];
+
+                // Find arrival times at GND and Châtelet
+                let gndArrival = null;
+                let chateletArrival = null;
+
+                journey.sections.forEach(s => {
+                    const checkStop = (stopPoint, time) => {
+                        if (!stopPoint || !time) return;
+                        const sid = String(stopPoint.id || '');
+                        const sname = String(stopPoint.name || stopPoint.label || '');
+                        console.log(`Checking stop: [${sname}] (${sid}) at ${time}`);
+
+                        const isGND = sname.includes('Gare du Nord') || sname.includes('Magenta') || sid.includes(CODES.GND) || sid.includes(CODES.GND_UIC) || sid.includes(CODES.GND_MAGENTA_UIC);
+                        if (isGND) {
+                            gndArrival = parseSNCFDate(time);
+                            console.log(`Matched Gare du Nord / Magenta! (${sname || sid})`);
+                        }
+
+                        const isChatelet = sname.includes('Châtelet') || sid.includes(CODES.CHATELET_RERD_IDFM) || sid.includes(CODES.CHATELET_RERD_UIC) || sid.includes(CODES.CHATELET_ZONE);
+                        if (isChatelet) {
+                            chateletArrival = parseSNCFDate(time);
+                            console.log(`Matched Châtelet! (${sname || sid})`);
+                        }
+                    };
+
+                    if (s.stop_date_times) {
+                        s.stop_date_times.forEach(st => checkStop(st.stop_point, st.arrival_date_time));
+                    }
+                    if (s.to) {
+                        checkStop(s.to, s.arrival_date_time);
+                    }
+                });
+
+                if (!gndArrival && !chateletArrival) {
+                    throw new Error("Impossible de localiser l'arrivée à Gare du Nord ou Châtelet.");
+                }
+
+                const minDepartureGND = gndArrival ? new Date(gndArrival.getTime() + 7 * 60000) : null;
+                const minDepartureChatelet = chateletArrival ? new Date(chateletArrival.getTime() + 7 * 60000) : null;
+
+                const fetchOptions = async (from, minDep) => {
+                    if (!minDep) return null;
+                    const pad = (n) => String(n).padStart(2, '0');
+                    const formattedDate = `${minDep.getFullYear()}${pad(minDep.getMonth() + 1)}${pad(minDep.getDate())}T${pad(minDep.getHours())}${pad(minDep.getMinutes())}${pad(minDep.getSeconds())}`;
+
+                    const makeId = (c) => String(c).startsWith('87') ? `stop_area:SNCF:${c}` : `stop_area:IDFM:${c}`;
+
+                    // Fallback pairs [Origin, Destination] to try
+                    const idPairs = [
+                        [from, CODES.LA_DEFENSE], // Try primary IDFM IDs first
+                        [from === CODES.MAGENTA ? CODES.GND_MAGENTA_UIC : CODES.CHATELET_RERD_UIC, '8775822'] // Fallback to UIC codes
+                    ];
+
+                    for (const [f, t] of idPairs) {
+                        const url = `https://prim.iledefrance-mobilites.fr/marketplace/v2/navitia/journeys?from=${makeId(f)}&to=${makeId(t)}&datetime=${formattedDate}&min_nb_journeys=1`;
+                        console.log(`Request: ${f} -> ${t} at ${formattedDate}`);
+                        try {
+                            const res = await fetch(url, { headers: { 'apiKey': apiKey } });
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data.journeys && data.journeys.length > 0) {
+                                    console.log(`Success with ${f} -> ${t}`);
+                                    return data;
+                                }
+                            } else {
+                                const txt = await res.text();
+                                console.warn(`API Error ${res.status} for ${f}->${t}: ${txt}`);
+                            }
+                        } catch (e) { console.warn(`Silent fail for ${f}->${t}`, e); }
+                    }
+                    return null;
+                };
+
+                const [rerE, rerA] = await Promise.all([
+                    fetchOptions(CODES.MAGENTA, minDepartureGND),
+                    fetchOptions(CODES.CHATELET_RERA, minDepartureChatelet)
+                ]);
+
+                const getConnectionInfo = (data) => {
+                    if (!data || !data.journeys || data.journeys.length === 0) return null;
+                    const j = data.journeys[0];
+                    const arrival = parseSNCFDate(j.arrival_date_time);
+
+                    // Find the physical transport section to get departure and headsign
+                    const section = j.sections.find(s => s.type === 'public_transport');
+                    const departure = section ? parseSNCFDate(section.departure_date_time) : null;
+                    const headsign = section?.display_informations?.headsign || '???';
+
+                    console.log(`Connection: ${headsign} dep ${departure} arr ${arrival}`);
+                    return { arrival, departure, headsign };
+                };
+
+                const infoE = getConnectionInfo(rerE);
+                const infoA = getConnectionInfo(rerA);
+
+                if (!infoE && !infoA) {
+                    resultsDiv.innerHTML = `<p class="text-[10px] text-red-400 text-center py-2 italic">Aucune correspondance trouvée.</p>`;
+                    return;
+                }
+
+                const formatTime = (d) => d ? d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+
+                let fastest = null;
+                let isSameTime = false;
+                const arrE = infoE?.arrival;
+                const arrA = infoA?.arrival;
+
+                if (arrE && arrA) {
+                    const minE = Math.floor(arrE.getTime() / 60000);
+                    const minA = Math.floor(arrA.getTime() / 60000);
+                    if (minE === minA) {
+                        isSameTime = true;
+                    } else {
+                        fastest = minE < minA ? 'E' : 'A';
+                    }
+                } else if (arrE) {
+                    fastest = 'E';
+                } else if (arrA) {
+                    fastest = 'A';
+                }
+
+                const fastestBadge = '<span class="bg-green-500/20 text-green-400 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-tighter shadow-sm shadow-green-900/20">Plus rapide</span>';
+                const idemBadge = '<span class="bg-blue-500/20 text-blue-400 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-tighter shadow-sm shadow-blue-900/20">IDEM</span>';
+
+                resultsDiv.innerHTML = `
+                    <div class="flex flex-col gap-2.5">
+                        <div class="flex items-center justify-between opacity-${infoA ? '100' : '40'}">
+                            <div class="flex flex-col">
+                                <div class="flex items-center gap-2">
+                                    <button onclick="showTrafficStatus('line:IDFM:C01742', 'A')" class="w-5 h-5 rounded-full bg-[#ff0081] flex items-center justify-center text-[9px] font-black text-white hover:scale-110 active:scale-95 transition-transform shadow-lg shadow-[#ff0081]/20" title="Info Trafic RER A">A</button>
+                                    <span class="text-[11px] text-slate-300 font-semibold">via Châtelet</span>
+                                </div>
+                                ${infoA ? `<span class="text-[9px] text-slate-400 mt-0.5 ml-7">${formatTime(infoA.departure)} (${infoA.headsign})</span>` : ''}
+                            </div>
+                            <div class="flex flex-col items-end gap-1 px-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Arrivée La Défense à</span>
+                                    <span class="text-[12px] font-black text-white">${infoA ? formatTime(arrA) : 'Indisponible'}</span>
+                                </div>
+                                ${isSameTime ? idemBadge : (fastest === 'A' ? fastestBadge : '')}
+                            </div>
+                        </div>
+                        <div class="h-[1px] bg-slate-700/30 mx-1"></div>
+                        <div class="flex items-center justify-between opacity-${infoE ? '100' : '40'}">
+                            <div class="flex flex-col">
+                                <div class="flex items-center gap-2">
+                                    <button onclick="showTrafficStatus('line:IDFM:C01728', 'E')" class="w-5 h-5 rounded-full bg-[#bd76a1] flex items-center justify-center text-[9px] font-black text-white hover:scale-110 active:scale-95 transition-transform shadow-lg shadow-[#bd76a1]/20" title="Info Trafic RER E">E</button>
+                                    <span class="text-[11px] text-slate-300 font-semibold">via Magenta</span>
+                                </div>
+                                ${infoE ? `<span class="text-[9px] text-slate-400 mt-0.5 ml-7">${formatTime(infoE.departure)} (${infoE.headsign})</span>` : ''}
+                            </div>
+                            <div class="flex flex-col items-end gap-1 px-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Arrivée La Défense à</span>
+                                    <span class="text-[12px] font-black text-white">${infoE ? formatTime(arrE) : 'Indisponible'}</span>
+                                </div>
+                                ${isSameTime ? idemBadge : (fastest === 'E' ? fastestBadge : '')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+            } catch (err) {
+                resultsDiv.innerHTML = `<p class="text-[10px] text-red-400 text-center py-2 italic">Erreur: ${err.message}</p>`;
+            }
+        }
+
+        async function showTrafficStatus(lineId, lineName) {
+            const modal = document.getElementById('traffic-modal');
+            const content = document.getElementById('traffic-modal-content');
+            const body = document.getElementById('traffic-status-body');
+            const updateTime = document.getElementById('traffic-update-time');
+
+            const lineColors = {
+                'A': { bg: 'bg-[#ff0081]/20', border: 'border-[#ff0081]/50', text: 'text-[#ff0081]' },
+                'D': { bg: 'bg-[#5e9620]/20', border: 'border-[#5e9620]/50', text: 'text-[#84c140]' },
+                'E': { bg: 'bg-[#bd76a1]/20', border: 'border-[#bd76a1]/50', text: 'text-[#bd76a1]' }
+            };
+            const theme = lineColors[lineName] || lineColors['D'];
+
+            modal.classList.remove('hidden', 'pointer-events-none');
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+
+            content.querySelector('h3').innerHTML = `
+                <div class="w-8 h-8 rounded-full ${theme.bg} border ${theme.border} flex items-center justify-center">
+                    <span class="${theme.text} font-black text-[10px]">RER</span>
+                </div>
+                État du Trafic ${lineName}
+            `;
+
+            body.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-12 gap-4">
+                    <div class="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+                    <p class="text-slate-400 text-sm animate-pulse">Consultation de l'info trafic...</p>
+                </div>
+            `;
+
+            try {
+                const url = `https://prim.iledefrance-mobilites.fr/marketplace/v2/navitia/line_reports?filter=${lineId}`;
+
+                const response = await fetch(url, { headers: { 'apikey': apiKey } });
+                const data = await response.json();
+
+                const disruptions = data.disruptions || [];
+                updateTime.textContent = `Actualisé à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+
+                if (disruptions.length === 0) {
+                    body.innerHTML = `
+                        <div class="${theme.bg.replace('/20', '/10')} border ${theme.border.replace('/50', '/30')} p-8 rounded-2xl flex flex-col items-center gap-4 text-center">
+                            <div class="w-16 h-16 rounded-full ${theme.bg} flex items-center justify-center shadow-inner">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 ${theme.text}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="${theme.text} font-black text-lg mb-1 uppercase tracking-wider">Trafic Normal</h4>
+                                <p class="text-slate-400 text-sm">Aucun incident majeur n'est signalé sur l'ensemble de la ligne.</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    body.innerHTML = disruptions.map(d => {
+                        const isSevere = d.severity.effect === 'NO_SERVICE' || d.severity.name.toLowerCase().includes('fortement');
+                        const borderColor = isSevere ? 'border-red-500/30' : 'border-orange-500/30';
+                        const bgColor = isSevere ? 'bg-red-500/10' : 'bg-orange-500/10';
+                        const iconColor = isSevere ? 'text-red-400' : 'text-orange-400';
+
+                        return `
+                            <div class="${bgColor} border ${borderColor} p-5 rounded-2xl">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-2 h-2 rounded-full ${isSevere ? 'bg-red-500 animate-pulse' : 'bg-orange-500 animate-pulse'}"></div>
+                                    <h5 class="${iconColor} font-black text-xs uppercase tracking-widest">${d.severity.name}</h5>
+                                </div>
+                                <p class="text-slate-200 text-[13px] leading-relaxed font-medium">
+                                    ${d.messages && d.messages[0] ? d.messages[0].text : 'Incident sur la ligne.'}
+                                </p>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (e) {
+                console.error(e);
+                body.innerHTML = `
+                    <div class="bg-red-500/10 border border-red-500/30 p-6 rounded-2xl text-center">
+                        <p class="text-red-400 text-sm font-bold">❌ Erreur lors de la récupération des informations.</p>
+                        <p class="text-slate-500 text-xs mt-2">Vérifiez votre clé API ou votre connexion.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function closeTrafficStatus() {
+            const modal = document.getElementById('traffic-modal');
+            const content = document.getElementById('traffic-modal-content');
+
+            modal.classList.remove('opacity-100');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+
+            setTimeout(() => {
+                modal.classList.add('hidden', 'pointer-events-none');
+            }, 300);
+        }
+
+        // Events
+        document.getElementById('btn-save-key').addEventListener('click', saveKey);
+        DOM.apiKeyInput.addEventListener('keypress', e => { if (e.key === 'Enter') saveKey(); });
+        document.getElementById('btn-change-key').addEventListener('click', clearKey);
+        document.getElementById('btn-invert').addEventListener('click', toggleDirection);
+        document.getElementById('btn-refresh').addEventListener('click', loadData);
+
+        DOM.btnAller.addEventListener('click', () => setDirection(false));
+        DOM.btnRetour.addEventListener('click', () => setDirection(true));
+
+        DOM.destSelect.addEventListener('change', (e) => {
+            selectedDest = e.target.value;
+            updateUI();
+            loadData();
+        });
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>

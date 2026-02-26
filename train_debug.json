@@ -1,0 +1,240 @@
+{
+  "route": {
+    "id": "route:SNCF:D",
+    "name": "D",
+    "is_frequence": "False",
+    "direction_type": "forward",
+    "physical_modes": [
+      {
+        "id": "physical_mode:RapidTransit",
+        "name": "RER / Transilien"
+      }
+    ],
+    "direction": {
+      "id": "stop_area:SNCF:87681007",
+      "name": "Corbeil-Essonnes (Corbeil-Essonnes)",
+      "quality": 0,
+      "stop_area": {
+        "id": "stop_area:SNCF:87681007",
+        "name": "Corbeil-Essonnes",
+        "codes": [
+          {
+            "type": "source",
+            "value": "87681007"
+          },
+          {
+            "type": "uic",
+            "value": "87681007"
+          }
+        ],
+        "timezone": "Europe/Paris",
+        "label": "Corbeil-Essonnes (Corbeil-Essonnes)",
+        "coord": {
+          "lon": "2.47376",
+          "lat": "48.614405"
+        },
+        "links": []
+      },
+      "embedded_type": "stop_area"
+    },
+    "geojson": {
+      "type": "MultiLineString",
+      "coordinates": []
+    },
+    "links": [],
+    "line": {
+      "id": "line:SNCF:D",
+      "name": "D",
+      "code": "D",
+      "color": "5E9620",
+      "text_color": "FFFFFF",
+      "codes": [],
+      "physical_modes": [
+        {
+          "id": "physical_mode:RapidTransit",
+          "name": "RER / Transilien"
+        }
+      ],
+      "commercial_mode": {
+        "id": "commercial_mode:TNRER",
+        "name": "RER"
+      },
+      "network": {
+        "id": "network:SNCF:TNRER",
+        "name": "RER",
+        "links": []
+      },
+      "opening_time": "040400",
+      "closing_time": "015100",
+      "geojson": {
+        "type": "MultiLineString",
+        "coordinates": []
+      },
+      "links": []
+    }
+  },
+  "stop_point": {
+    "id": "stop_point:SNCF:87276220:RapidTransit",
+    "name": "Villiers-le-Bel - Gonesse - Arnouville",
+    "label": "Villiers-le-Bel - Gonesse - Arnouville (Arnouville)",
+    "coord": {
+      "lon": "2.416129",
+      "lat": "48.994205"
+    },
+    "links": [],
+    "commercial_modes": [
+      {
+        "id": "commercial_mode:TNRER",
+        "name": "RER"
+      }
+    ],
+    "physical_modes": [
+      {
+        "id": "physical_mode:RapidTransit",
+        "name": "RER / Transilien",
+        "co2_emission_rate": {
+          "value": 7.28,
+          "unit": "gEC/Km"
+        }
+      }
+    ],
+    "administrative_regions": [
+      {
+        "id": "admin:fr:95019",
+        "name": "Arnouville",
+        "level": 8,
+        "zip_code": "95400",
+        "label": "Arnouville (95400)",
+        "insee": "95019",
+        "coord": {
+          "lon": "2.4202824",
+          "lat": "48.98921259999999"
+        }
+      }
+    ],
+    "stop_area": {
+      "id": "stop_area:SNCF:87276220",
+      "name": "Villiers-le-Bel - Gonesse - Arnouville",
+      "codes": [
+        {
+          "type": "source",
+          "value": "87276220"
+        },
+        {
+          "type": "uic",
+          "value": "87276220"
+        }
+      ],
+      "timezone": "Europe/Paris",
+      "label": "Villiers-le-Bel - Gonesse - Arnouville (Arnouville)",
+      "coord": {
+        "lon": "2.416129",
+        "lat": "48.994205"
+      },
+      "links": [],
+      "administrative_regions": [
+        {
+          "id": "admin:fr:95019",
+          "name": "Arnouville",
+          "level": 8,
+          "zip_code": "95400",
+          "label": "Arnouville (95400)",
+          "insee": "95019",
+          "coord": {
+            "lon": "2.4202824",
+            "lat": "48.98921259999999"
+          }
+        }
+      ]
+    },
+    "equipments": []
+  },
+  "stop_date_time": {
+    "departure_date_time": "20260225T180500",
+    "base_departure_date_time": "20260225T180500",
+    "arrival_date_time": "20260225T180400",
+    "base_arrival_date_time": "20260225T180400",
+    "additional_informations": [],
+    "links": [
+      {
+        "type": "stop_area",
+        "rel": "origins",
+        "category": "origin",
+        "id": "stop_area:SNCF:87276246",
+        "internal": true
+      },
+      {
+        "type": "stop_area",
+        "rel": "terminus",
+        "category": "terminus",
+        "id": "stop_area:SNCF:87682005",
+        "internal": true
+      }
+    ],
+    "data_freshness": "base_schedule"
+  },
+  "display_informations": {
+    "commercial_mode": "RER",
+    "network": "RER",
+    "direction": "Melun (Melun)",
+    "label": "D",
+    "color": "5E9620",
+    "code": "D",
+    "headsign": "ZECO",
+    "name": "D",
+    "links": [
+      {
+        "templated": false,
+        "rel": "origins",
+        "internal": true,
+        "type": "stop_area",
+        "id": "stop_area:SNCF:87276246",
+        "category": "origin"
+      },
+      {
+        "templated": false,
+        "rel": "terminus",
+        "internal": true,
+        "type": "stop_area",
+        "id": "stop_area:SNCF:87682005",
+        "category": "terminus"
+      }
+    ],
+    "text_color": "FFFFFF",
+    "trip_short_name": "153700-153701",
+    "company": "SNCF Voyageurs",
+    "description": "",
+    "physical_mode": "RER / Transilien",
+    "equipments": []
+  },
+  "links": [
+    {
+      "type": "line",
+      "id": "line:SNCF:D"
+    },
+    {
+      "type": "company",
+      "id": "company:SNCF:1187"
+    },
+    {
+      "type": "vehicle_journey",
+      "id": "vehicle_journey:SNCF:2026-02-25:153700-153701:1187:RapidTransit"
+    },
+    {
+      "type": "route",
+      "id": "route:SNCF:D"
+    },
+    {
+      "type": "commercial_mode",
+      "id": "commercial_mode:TNRER"
+    },
+    {
+      "type": "physical_mode",
+      "id": "physical_mode:RapidTransit"
+    },
+    {
+      "type": "network",
+      "id": "network:SNCF:TNRER"
+    }
+  ]
+}
