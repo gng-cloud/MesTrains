@@ -583,18 +583,15 @@
                         if (!stopPoint || !time) return;
                         const sid = String(stopPoint.id || '');
                         const sname = String(stopPoint.name || stopPoint.label || '');
-                        console.log(`Checking stop: [${sname}] (${sid}) at ${time}`);
 
                         const isGND = sname.includes('Gare du Nord') || sname.includes('Magenta') || sid.includes(CODES.GND) || sid.includes(CODES.GND_UIC) || sid.includes(CODES.GND_MAGENTA_UIC);
                         if (isGND) {
                             gndArrival = parseSNCFDate(time);
-                            console.log(`Matched Gare du Nord / Magenta! (${sname || sid})`);
                         }
 
                         const isChatelet = sname.includes('Châtelet') || sid.includes(CODES.CHATELET_RERD_IDFM) || sid.includes(CODES.CHATELET_RERD_UIC) || sid.includes(CODES.CHATELET_ZONE);
                         if (isChatelet) {
                             chateletArrival = parseSNCFDate(time);
-                            console.log(`Matched Châtelet! (${sname || sid})`);
                         }
                     };
 
@@ -628,13 +625,11 @@
 
                     for (const [f, t] of idPairs) {
                         const url = `https://prim.iledefrance-mobilites.fr/marketplace/v2/navitia/journeys?from=${makeId(f)}&to=${makeId(t)}&datetime=${formattedDate}&min_nb_journeys=1`;
-                        console.log(`Request: ${f} -> ${t} at ${formattedDate}`);
                         try {
                             const res = await fetch(url, { headers: { 'apiKey': apiKey } });
                             if (res.ok) {
                                 const data = await res.json();
                                 if (data.journeys && data.journeys.length > 0) {
-                                    console.log(`Success with ${f} -> ${t}`);
                                     return data;
                                 }
                             } else {
@@ -661,7 +656,6 @@
                     const departure = section ? parseSNCFDate(section.departure_date_time) : null;
                     const headsign = section?.display_informations?.headsign || '???';
 
-                    console.log(`Connection: ${headsign} dep ${departure} arr ${arrival}`);
                     return { arrival, departure, headsign };
                 };
 
