@@ -295,8 +295,8 @@
             { id: '71501', name: 'Gare de Lyon', lat: 48.8443, lon: 2.3744 },
             { id: '474151', name: 'Châtelet-Les Halles', lat: 48.8619, lon: 2.3470 },
             { id: '71410', name: 'Gare du Nord', lat: 48.8809, lon: 2.3553 },
-            { id: 'monomodalStopPlace:43204', name: 'Stade de France Saint-Denis', lat: 48.9176, lon: 2.3504 },
-            { id: 'monomodalStopPlace:412743', name: 'Saint-Denis', lat: 48.9348, lon: 2.3454 }
+            { id: '72206', name: 'Stade de France Saint-Denis', lat: 48.9176, lon: 2.3504 },
+            { id: '72323', name: 'Saint-Denis', lat: 48.9348, lon: 2.3454 }
         ];
 
         const DOM = {
@@ -932,34 +932,8 @@
                 </div>
             `;
 
-            if (!navigator.geolocation) {
-                body.innerHTML = getTrainIdErrorTpl("La géolocalisation n'est pas supportée par votre navigateur.");
-                return;
-            }
-
-            navigator.geolocation.getCurrentPosition(async (position) => {
+            const fetchTrainForClosestStation = async (closestStation, isMocked = false) => {
                 try {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-
-                    // Find closest station
-                    let closestStation = null;
-                    let minDistance = Infinity;
-
-                    RER_D_STATIONS.forEach(station => {
-                        const dist = getDistance(lat, lon, station.lat, station.lon);
-                        if (dist < minDistance) {
-                            minDistance = dist;
-                            closestStation = station;
-                        }
-                    });
-
-                    if (minDistance > 5) { // If further than 5km from any station, probably not in RER
-                        // MOCK GPS: Saint-Denis
-                        closestStation = RER_D_STATIONS.find(s => s.name === 'Saint-Denis');
-                        console.warn("Trop loin d'une gare RER D (> 5km). Utilisation de la position de test : Saint-Denis.");
-                    }
-
                     // Assume moving towards Paris. Fetch schedules for this closest station towards Paris
                     const url = `https://prim.iledefrance-mobilites.fr/marketplace/v2/navitia/journeys?from=stop_area:IDFM:${closestStation.id}&to=stop_area:IDFM:${CODES.PARIS_DIRECTION}&min_nb_journeys=3`;
 
@@ -973,8 +947,6 @@
                     }
 
                     // Now try to match.
-                    // We check if there's a train that departed very recently, or is about to depart within a small margin.
-                    // Average speed assumption or simple closeness in time.
                     const now = new Date();
                     let matchedTrain = null;
                     let minTimeDiff = Infinity;
@@ -984,12 +956,8 @@
                         if (!leg) return;
 
                         const depTime = parseSNCFDate(leg.departure_date_time);
-                        // diff in minutes
                         const diff = (depTime - now) / 60000;
 
-                        // We assume the user is "in" the train if they are close to the station
-                        // and the train is departing around now (e.g., between -5 mins to +5 mins)
-                        // This window accounts for the user being between stations.
                         if (Math.abs(diff) < minTimeDiff && diff > -10 && diff < 10) {
                             minTimeDiff = Math.abs(diff);
                             matchedTrain = {
@@ -1002,7 +970,6 @@
                     });
 
                     if (matchedTrain) {
-                        const isMocked = (minDistance > 5);
                         body.innerHTML = `
                             <div class="py-4">
                                 ${isMocked ? '<span class="bg-orange-500/20 text-orange-400 text-[10px] px-2 py-0.5 rounded-full font-bold mb-2 inline-block border border-orange-500/30">Mode Test: St-Denis</span>' : ''}
@@ -1025,11 +992,46 @@
                     console.error(e);
                     body.innerHTML = getTrainIdErrorTpl("Erreur lors de l'interrogation du réseau.");
                 }
+            };
+
+            const triggerMock = () => {
+                console.warn("Utilisation de la position de test : Saint-Denis.");
+                const mockStation = RER_D_STATIONS.find(s => s.name === 'Saint-Denis');
+                fetchTrainForClosestStation(mockStation, true);
+            };
+
+            if (!navigator.geolocation) {
+                // If geoloc isn't supported, fallback to mock directly
+                triggerMock();
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+
+                // Find closest station
+                let closestStation = null;
+                let minDistance = Infinity;
+
+                RER_D_STATIONS.forEach(station => {
+                    const dist = getDistance(lat, lon, station.lat, station.lon);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        closestStation = station;
+                    }
+                });
+
+                if (minDistance > 5) {
+                    triggerMock();
+                } else {
+                    fetchTrainForClosestStation(closestStation, false);
+                }
 
             }, (error) => {
-                let msg = "Erreur GPS. Veuillez autoriser la localisation.";
-                if (error.code === 1) msg = "Accès à la géolocalisation refusé.";
-                body.innerHTML = getTrainIdErrorTpl(msg);
+                // If Geolocation is denied or errors out, trigger the mock instead of failing.
+                console.warn("Erreur GPS interceptée, basculement sur le mock.");
+                triggerMock();
             }, {
                 enableHighAccuracy: true,
                 timeout: 10000,
