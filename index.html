@@ -294,7 +294,9 @@
             { id: '61726', name: 'Maisons-Alfort - Alfortville', lat: 48.8021, lon: 2.4179 },
             { id: '71501', name: 'Gare de Lyon', lat: 48.8443, lon: 2.3744 },
             { id: '474151', name: 'Châtelet-Les Halles', lat: 48.8619, lon: 2.3470 },
-            { id: '71410', name: 'Gare du Nord', lat: 48.8809, lon: 2.3553 }
+            { id: '71410', name: 'Gare du Nord', lat: 48.8809, lon: 2.3553 },
+            { id: 'monomodalStopPlace:43204', name: 'Stade de France Saint-Denis', lat: 48.9176, lon: 2.3504 },
+            { id: 'monomodalStopPlace:412743', name: 'Saint-Denis', lat: 48.9348, lon: 2.3454 }
         ];
 
         const DOM = {
@@ -953,8 +955,9 @@
                     });
 
                     if (minDistance > 5) { // If further than 5km from any station, probably not in RER
-                        body.innerHTML = getTrainIdErrorTpl("Vous semblez trop loin de la ligne D du RER (Sud) pour être dans un train.");
-                        return;
+                        // MOCK GPS: Saint-Denis
+                        closestStation = RER_D_STATIONS.find(s => s.name === 'Saint-Denis');
+                        console.warn("Trop loin d'une gare RER D (> 5km). Utilisation de la position de test : Saint-Denis.");
                     }
 
                     // Assume moving towards Paris. Fetch schedules for this closest station towards Paris
@@ -999,8 +1002,10 @@
                     });
 
                     if (matchedTrain) {
+                        const isMocked = (minDistance > 5);
                         body.innerHTML = `
                             <div class="py-4">
+                                ${isMocked ? '<span class="bg-orange-500/20 text-orange-400 text-[10px] px-2 py-0.5 rounded-full font-bold mb-2 inline-block border border-orange-500/30">Mode Test: St-Denis</span>' : ''}
                                 <p class="text-[10px] text-[#84c140] font-bold uppercase tracking-widest mb-1">C'est Trouvé !</p>
                                 <p class="text-sm text-slate-400 mb-6">À proximité de <span class="text-white font-semibold">${matchedTrain.station}</span></p>
                                 
