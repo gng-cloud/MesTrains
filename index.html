@@ -104,6 +104,28 @@
         </div>
     </div>
 
+    <!-- TRAIN ID MODAL -->
+    <div id="trainid-modal"
+        class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[60] flex items-center justify-center p-4 transition-all duration-300 opacity-0 pointer-events-none">
+        <div class="bg-slate-800 border border-slate-700 p-6 rounded-3xl shadow-2xl max-w-md w-full transform scale-95 transition-transform duration-300 relative text-center"
+            id="trainid-modal-content">
+            <button onclick="closeTrainIdModal()"
+                class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 hover:bg-slate-700/50 rounded-full transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div id="trainid-modal-body" class="py-4">
+                <div class="flex flex-col items-center justify-center py-6 gap-4">
+                    <div class="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin">
+                    </div>
+                    <p class="text-slate-400 text-sm animate-pulse">Recherche de votre train via GPS...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MAIN APP -->
     <div id="main-app" class="max-w-md mx-auto p-4 flex flex-col min-h-screen hidden">
 
@@ -118,17 +140,29 @@
                 </div>
                 <span>RER D</span>
             </button>
-            <button id="btn-change-key"
-                class="text-xs font-semibold text-slate-400 hover:text-white transition-colors flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700 hover:bg-slate-700 shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Clé API
-            </button>
+            <div class="flex gap-2">
+                <button onclick="identifyMyTrain()"
+                    class="text-xs font-semibold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1.5 rounded-full border border-blue-500/30 transition-all flex items-center gap-1.5 shadow-sm"
+                    title="Identifier mon train (Vers Paris)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Train ?
+                </button>
+                <button id="btn-change-key"
+                    class="text-xs font-semibold text-slate-400 hover:text-white transition-colors flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700 hover:bg-slate-700 shadow-sm"
+                    title="Changer la clé API">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    </svg>
+                </button>
+            </div>
         </header>
 
         <!-- Controls Box -->
@@ -238,8 +272,30 @@
             CHATELET_RERD_IDFM: '474151',
             CHATELET_RERD_UIC: '8775860',
             CHATELET_ZONE: '71520',
-            ARN_ID: '66009'
+            ARN_ID: '66009',
+            PARIS_DIRECTION: '474151' // Chatelet as a proxy for "Towards Paris"
         };
+
+        const RER_D_STATIONS = [
+            { id: '60155', name: 'Corbeil-Essonnes', lat: 48.6105, lon: 2.4795 },
+            { id: '60124', name: 'Le Bras-de-Fer', lat: 48.6108, lon: 2.4571 },
+            { id: '60088', name: 'Évry-Courcouronnes Centre', lat: 48.6295, lon: 2.4292 },
+            { id: '59616', name: 'Orangis - Bois de l\'Épine', lat: 48.6385, lon: 2.4116 },
+            { id: '59247', name: 'Grigny Centre', lat: 48.6534, lon: 2.3831 },
+            { id: '60086', name: 'Évry-Val-de-Seine', lat: 48.6366, lon: 2.4419 },
+            { id: '60074', name: 'Grand Bourg', lat: 48.6521, lon: 2.4398 },
+            { id: '59733', name: 'Ris-Orangis', lat: 48.6577, lon: 2.4173 },
+            { id: '62208', name: 'Juvisy', lat: 48.6874, lon: 2.3788 },
+            { id: '62095', name: 'Vigneux-sur-Seine', lat: 48.7073, lon: 2.4172 },
+            { id: '62261', name: 'Villeneuve-Saint-Georges', lat: 48.7327, lon: 2.4439 },
+            { id: '61972', name: 'Villeneuve Triage', lat: 48.7497, lon: 2.4412 },
+            { id: '463428', name: 'Créteil Pompadour', lat: 48.7699, lon: 2.4385 },
+            { id: '61759', name: 'Le Vert de Maisons', lat: 48.7915, lon: 2.4285 },
+            { id: '61726', name: 'Maisons-Alfort - Alfortville', lat: 48.8021, lon: 2.4179 },
+            { id: '71501', name: 'Gare de Lyon', lat: 48.8443, lon: 2.3744 },
+            { id: '474151', name: 'Châtelet-Les Halles', lat: 48.8619, lon: 2.3470 },
+            { id: '71410', name: 'Gare du Nord', lat: 48.8809, lon: 2.3553 }
+        ];
 
         const DOM = {
             authModal: document.getElementById('auth-modal'),
@@ -833,6 +889,156 @@
             setTimeout(() => {
                 modal.classList.add('hidden', 'pointer-events-none');
             }, 300);
+        }
+
+        function closeTrainIdModal() {
+            const modal = document.getElementById('trainid-modal');
+            const content = document.getElementById('trainid-modal-content');
+            modal.classList.remove('opacity-100');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden', 'pointer-events-none'), 300);
+        }
+
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c; // Distance in km
+        }
+
+        async function identifyMyTrain() {
+            const modal = document.getElementById('trainid-modal');
+            const content = document.getElementById('trainid-modal-content');
+            const body = document.getElementById('trainid-modal-body');
+
+            modal.classList.remove('hidden', 'pointer-events-none');
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+
+            body.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-6 gap-4">
+                    <div class="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+                    <p class="text-slate-400 text-sm animate-pulse">Recherche de votre train via GPS...</p>
+                </div>
+            `;
+
+            if (!navigator.geolocation) {
+                body.innerHTML = getTrainIdErrorTpl("La géolocalisation n'est pas supportée par votre navigateur.");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                try {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+
+                    // Find closest station
+                    let closestStation = null;
+                    let minDistance = Infinity;
+
+                    RER_D_STATIONS.forEach(station => {
+                        const dist = getDistance(lat, lon, station.lat, station.lon);
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            closestStation = station;
+                        }
+                    });
+
+                    if (minDistance > 5) { // If further than 5km from any station, probably not in RER
+                        body.innerHTML = getTrainIdErrorTpl("Vous semblez trop loin de la ligne D du RER (Sud) pour être dans un train.");
+                        return;
+                    }
+
+                    // Assume moving towards Paris. Fetch schedules for this closest station towards Paris
+                    const url = `https://prim.iledefrance-mobilites.fr/marketplace/v2/navitia/journeys?from=stop_area:IDFM:${closestStation.id}&to=stop_area:IDFM:${CODES.PARIS_DIRECTION}&min_nb_journeys=3`;
+
+                    const response = await fetch(url, { headers: { 'apikey': apiKey } });
+                    if (!response.ok) throw new Error("Erreur réseau IDFM API.");
+                    const data = await response.json();
+
+                    if (!data.journeys || data.journeys.length === 0) {
+                        body.innerHTML = getTrainIdErrorTpl(`Aucun train à proximité de ${closestStation.name} vers Paris.`);
+                        return;
+                    }
+
+                    // Now try to match.
+                    // We check if there's a train that departed very recently, or is about to depart within a small margin.
+                    // Average speed assumption or simple closeness in time.
+                    const now = new Date();
+                    let matchedTrain = null;
+                    let minTimeDiff = Infinity;
+
+                    data.journeys.forEach(j => {
+                        const leg = j.sections.find(s => s.type === 'public_transport');
+                        if (!leg) return;
+
+                        const depTime = parseSNCFDate(leg.departure_date_time);
+                        // diff in minutes
+                        const diff = (depTime - now) / 60000;
+
+                        // We assume the user is "in" the train if they are close to the station
+                        // and the train is departing around now (e.g., between -5 mins to +5 mins)
+                        // This window accounts for the user being between stations.
+                        if (Math.abs(diff) < minTimeDiff && diff > -10 && diff < 10) {
+                            minTimeDiff = Math.abs(diff);
+                            matchedTrain = {
+                                mission: leg.display_informations?.headsign || "RER",
+                                diff: Math.round(diff),
+                                direction: leg.display_informations?.direction || "Interconnexion",
+                                station: closestStation.name
+                            };
+                        }
+                    });
+
+                    if (matchedTrain) {
+                        body.innerHTML = `
+                            <div class="py-4">
+                                <p class="text-[10px] text-[#84c140] font-bold uppercase tracking-widest mb-1">C'est Trouvé !</p>
+                                <p class="text-sm text-slate-400 mb-6">À proximité de <span class="text-white font-semibold">${matchedTrain.station}</span></p>
+                                
+                                <div class="w-24 h-24 mx-auto rounded-full bg-[#5e9620]/20 border border-[#5e9620]/50 shadow-inner flex flex-col items-center justify-center mb-6 relative">
+                                    <div class="absolute inset-0 rounded-full border border-[#84c140]/30 animate-ping opacity-20"></div>
+                                    <h3 class="text-3xl font-black text-white tracking-wide">${matchedTrain.mission}</h3>
+                                </div>
+                                <p class="text-sm font-medium text-slate-300">Mission <span class="font-bold text-white">${matchedTrain.mission}</span></p>
+                                <p class="text-xs text-slate-500 mt-1">Dir. ${matchedTrain.direction}</p>
+                            </div>
+                        `;
+                    } else {
+                        body.innerHTML = getTrainIdErrorTpl("Impossible de corréler votre position avec un train en circulation actuellement.");
+                    }
+
+                } catch (e) {
+                    console.error(e);
+                    body.innerHTML = getTrainIdErrorTpl("Erreur lors de l'interrogation du réseau.");
+                }
+
+            }, (error) => {
+                let msg = "Erreur GPS. Veuillez autoriser la localisation.";
+                if (error.code === 1) msg = "Accès à la géolocalisation refusé.";
+                body.innerHTML = getTrainIdErrorTpl(msg);
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            });
+        }
+
+        function getTrainIdErrorTpl(msg) {
+            return `
+                <div class="bg-red-500/10 border border-red-500/30 p-6 rounded-2xl text-center">
+                    <p class="text-red-400 text-sm font-bold">❌ Repérage Échoué</p>
+                    <p class="text-slate-400 text-xs mt-3 leading-relaxed">${msg}</p>
+                </div>
+            `;
         }
 
         // Events
