@@ -297,7 +297,11 @@
             { id: '474151', name: 'Châtelet-Les Halles', lat: 48.8619, lon: 2.3470 },
             { id: '71410', name: 'Gare du Nord', lat: 48.8809, lon: 2.3553 },
             { id: '72206', name: 'Stade de France Saint-Denis', lat: 48.9176, lon: 2.3504 },
-            { id: '72323', name: 'Saint-Denis', lat: 48.9348, lon: 2.3454 }
+            { id: '72323', name: 'Saint-Denis', lat: 48.9348, lon: 2.3454 },
+            { id: '66002', name: 'Pierrefitte-Stains', lat: 48.9566, lon: 2.3683 },
+            { id: '66005', name: 'Garges-Sarcelles', lat: 48.9749, lon: 2.3855 },
+            { id: '66009', name: 'Arnouville', lat: 48.9904, lon: 2.3942 },
+            { id: '66014', name: 'Goussainville', lat: 49.0326, lon: 2.4842 }
         ];
 
         const DOM = {
@@ -946,19 +950,19 @@
 
             const fetchTrainForClosestStation = async (closestStation, isMocked = false) => {
                 try {
-                    // Assume moving towards Paris. Fetch schedules for this closest station towards Paris
-                    const url = `https://prim.iledefrance-mobilites.fr/marketplace/v2/navitia/journeys?from=stop_area:IDFM:${closestStation.id}&to=stop_area:IDFM:${CODES.PARIS_DIRECTION}&min_nb_journeys=3`;
+                    // We search from Arnouville to Paris to reliably get the Arnouville departure time
+                    const url = `https://prim.iledefrance-mobilites.fr/marketplace/v2/navitia/journeys?from=stop_area:IDFM:${CODES.ARN_ID}&to=stop_area:IDFM:${CODES.PARIS_DIRECTION}&min_nb_journeys=10`;
 
                     const response = await fetch(url, { headers: { 'apikey': apiKey } });
                     if (!response.ok) throw new Error("Erreur réseau IDFM API.");
                     const data = await response.json();
 
                     if (!data.journeys || data.journeys.length === 0) {
-                        body.innerHTML = getTrainIdErrorTpl(`Aucun train à proximité de ${closestStation.name} vers Paris.`);
+                        body.innerHTML = getTrainIdErrorTpl(`Aucun train au départ de Arnouville vers Paris trouvé.`);
                         return;
                     }
 
-                    // Now try to match.
+                    // Now try to match the train passing by closestStation
                     const now = new Date();
                     let matchedTrain = null;
                     let minTimeDiff = Infinity;
@@ -967,18 +971,33 @@
                         const leg = j.sections.find(s => s.type === 'public_transport');
                         if (!leg) return;
 
-                        const depTime = parseSNCFDate(leg.departure_date_time);
-                        const diff = (depTime - now) / 60000;
+                        // Time at Arnouville (starting point of search)
+                        const arnDeparture = parseSNCFDate(leg.departure_date_time);
 
-                        if (Math.abs(diff) < minTimeDiff && diff > -10 && diff < 10) {
-                            minTimeDiff = Math.abs(diff);
-                            matchedTrain = {
-                                mission: leg.display_informations?.headsign || "RER",
-                                diff: Math.round(diff),
-                                direction: leg.display_informations?.direction || "Interconnexion",
-                                station: closestStation.name,
-                                journey: j
-                            };
+                        // Find time at closestStation
+                        let arrivalAtClosest = null;
+                        if (closestStation.id === CODES.ARN_ID) {
+                            arrivalAtClosest = arnDeparture;
+                        } else if (leg.stop_date_times) {
+                            const stop = leg.stop_date_times.find(st => String(st.stop_point.id).includes(closestStation.id));
+                            if (stop) {
+                                arrivalAtClosest = parseSNCFDate(stop.arrival_date_time || stop.departure_date_time);
+                            }
+                        }
+
+                        if (arrivalAtClosest) {
+                            const diff = (arrivalAtClosest - now) / 60000;
+                            // Match if it passes within +/- 10 mins of current time
+                            if (Math.abs(diff) < minTimeDiff && diff > -15 && diff < 15) {
+                                minTimeDiff = Math.abs(diff);
+                                matchedTrain = {
+                                    mission: leg.display_informations?.headsign || "RER",
+                                    arnTime: arnDeparture.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+                                    direction: leg.display_informations?.direction || "Interconnexion",
+                                    station: closestStation.name,
+                                    journey: j
+                                };
+                            }
                         }
                     });
 
@@ -988,7 +1007,8 @@
                             <div class="py-4">
                                 ${isMocked ? '<span class="bg-orange-500/20 text-orange-400 text-[10px] px-2 py-0.5 rounded-full font-bold mb-2 inline-block border border-orange-500/30">Mode Test: St-Denis</span>' : ''}
                                 <p class="text-[10px] text-[#84c140] font-bold uppercase tracking-widest mb-1">C'est Trouvé !</p>
-                                <p class="text-sm text-slate-400 mb-6">À proximité de <span class="text-white font-semibold">${matchedTrain.station}</span></p>
+                                <p class="text-sm text-slate-400 mb-2">À proximité de <span class="text-white font-semibold">${matchedTrain.station}</span></p>
+                                <p class="text-[11px] text-blue-400 font-bold mb-6">Pris à Arnouville à <span class="text-white">${matchedTrain.arnTime}</span></p>
                                 
                                 <div class="w-24 h-24 mx-auto rounded-full bg-[#5e9620]/20 border border-[#5e9620]/50 shadow-inner flex flex-col items-center justify-center mb-6 relative">
                                     <div class="absolute inset-0 rounded-full border border-[#84c140]/30 animate-ping opacity-20"></div>
