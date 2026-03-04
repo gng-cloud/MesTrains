@@ -673,7 +673,7 @@
                 }
 
                 const minDepartureGND = gndArrival ? new Date(gndArrival.getTime() + 7 * 60000) : null;
-                const minDepartureChatelet = chateletArrival ? new Date(chateletArrival.getTime() + 7 * 60000) : null;
+                const minDepartureChatelet = chateletArrival ? new Date(chateletArrival.getTime() + 4 * 60000) : null;
 
                 const fetchOptions = async (from, minDep) => {
                     if (!minDep) return null;
@@ -950,8 +950,12 @@
 
             const fetchTrainForClosestStation = async (closestStation, isMocked = false) => {
                 try {
-                    // We search from Arnouville to Paris to reliably get the Arnouville departure time
-                    const url = `https://prim.iledefrance-mobilites.fr/marketplace/v2/navitia/journeys?from=stop_area:IDFM:${CODES.ARN_ID}&to=stop_area:IDFM:${CODES.PARIS_DIRECTION}&min_nb_journeys=10`;
+                    // To catch trains already in transit, search 40 minutes in the past
+                    const past40 = new Date(Date.now() - 40 * 60000);
+                    const pad = (n) => String(n).padStart(2, '0');
+                    const dtStr = `${past40.getFullYear()}${pad(past40.getMonth() + 1)}${pad(past40.getDate())}T${pad(past40.getHours())}${pad(past40.getMinutes())}${pad(past40.getSeconds())}`;
+
+                    const url = `https://prim.iledefrance-mobilites.fr/marketplace/v2/navitia/journeys?from=stop_area:IDFM:${CODES.ARN_ID}&to=stop_area:IDFM:${CODES.PARIS_DIRECTION}&datetime=${dtStr}&min_nb_journeys=15`;
 
                     const response = await fetch(url, { headers: { 'apikey': apiKey } });
                     if (!response.ok) throw new Error("Erreur réseau IDFM API.");
@@ -986,10 +990,20 @@
                         }
 
                         if (arrivalAtClosest) {
-                            const diff = (arrivalAtClosest - now) / 60000;
-                            // Match if it passes within +/- 10 mins of current time
-                            if (Math.abs(diff) < minTimeDiff && diff > -15 && diff < 15) {
-                                minTimeDiff = Math.abs(diff);
+                            const diffMins = (now - arrivalAtClosest) / 60000; // Positive if train passed station
+
+                            // Correlation logic:
+                            // We prefer trains that passed the closest station recently (last 15 mins) 
+                            // or are about to arrive (next 2 mins).
+                            let score = Math.abs(diffMins);
+
+                            // Penalize future trains more than past ones because if we are on the train, 
+                            // it has already passed or is currently at the station.
+                            if (diffMins < -2) score += 10;
+                            if (diffMins > 15) score += 20;
+
+                            if (score < minTimeDiff && diffMins > -10 && diffMins < 20) {
+                                minTimeDiff = score;
                                 matchedTrain = {
                                     mission: leg.display_informations?.headsign || "RER",
                                     arnTime: arnDeparture.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
