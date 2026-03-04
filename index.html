@@ -948,7 +948,7 @@
                 </div>
             `;
 
-            const fetchTrainForClosestStation = async (closestStation, isMocked = false) => {
+            const fetchTrainForClosestStation = async (closestStation, isMocked = false, coords = null) => {
                 try {
                     // To catch trains already in transit, search 40 minutes in the past
                     const past40 = new Date(Date.now() - 40 * 60000);
@@ -1022,8 +1022,10 @@
                                 ${isMocked ? '<span class="bg-orange-500/20 text-orange-400 text-[10px] px-2 py-0.5 rounded-full font-bold mb-2 inline-block border border-orange-500/30">Mode Test: St-Denis</span>' : ''}
                                 <p class="text-[10px] text-[#84c140] font-bold uppercase tracking-widest mb-1">C'est Trouvé !</p>
                                 <p class="text-sm text-slate-400 mb-2">À proximité de <span class="text-white font-semibold">${matchedTrain.station}</span></p>
-                                <p class="text-[11px] text-blue-400 font-bold mb-6">Pris à Arnouville à <span class="text-white">${matchedTrain.arnTime}</span></p>
+                                <p class="text-[11px] text-blue-400 font-bold mb-2">Pris à Arnouville à <span class="text-white">${matchedTrain.arnTime}</span></p>
                                 
+                                ${coords ? `<p class="text-[9px] text-slate-500 mb-6 font-mono">📍 ${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}</p>` : '<div class="mb-6"></div>'}
+
                                 <div class="w-24 h-24 mx-auto rounded-full bg-[#5e9620]/20 border border-[#5e9620]/50 shadow-inner flex flex-col items-center justify-center mb-6 relative">
                                     <div class="absolute inset-0 rounded-full border border-[#84c140]/30 animate-ping opacity-20"></div>
                                     <h3 class="text-3xl font-black text-white tracking-wide">${matchedTrain.mission}</h3>
@@ -1052,10 +1054,10 @@
                 }
             };
 
-            const triggerMock = () => {
+            const triggerMock = (forcedCoords) => {
                 console.warn("Utilisation de la position de test : Saint-Denis.");
-                const mockStation = RER_D_STATIONS.find(s => s.name === 'Saint-Denis');
-                fetchTrainForClosestStation(mockStation, true);
+                const mockID = RER_D_STATIONS.find(s => s.name === 'Saint-Denis');
+                fetchTrainForClosestStation(mockID, true, forcedCoords);
             };
 
             if (!navigator.geolocation) {
@@ -1081,15 +1083,15 @@
                 });
 
                 if (minDistance > 5) {
-                    triggerMock();
+                    triggerMock({ lat, lon });
                 } else {
-                    fetchTrainForClosestStation(closestStation, false);
+                    fetchTrainForClosestStation(closestStation, false, { lat, lon });
                 }
 
             }, (error) => {
                 // If Geolocation is denied or errors out, trigger the mock instead of failing.
                 console.warn("Erreur GPS interceptée, basculement sur le mock.");
-                triggerMock();
+                triggerMock(null);
             }, {
                 enableHighAccuracy: true,
                 timeout: 10000,
